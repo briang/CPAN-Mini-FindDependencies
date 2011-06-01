@@ -1,0 +1,29 @@
+--- #YAML:1.0
+name:               CPAN-FindDependencies
+version:            2.34
+abstract:           ~
+author:  []
+license:            unknown
+distribution_type:  module
+configure_requires:
+    ExtUtils::MakeMaker:  0
+build_requires:
+    ExtUtils::MakeMaker:  0
+requires:
+    Capture::Tiny:        0.05
+    Devel::CheckOS:       1.52
+    File::Temp:           0.19
+    LWP::Simple:          1.41
+    Module::CoreList:     2.12
+    Parse::CPAN::Packages:  2.31
+    Scalar::Util:         1.14
+    URI::file:            4.13
+    YAML::Tiny:           1.36
+no_index:
+    directory:
+        - t
+        - inc
+generated_by:       ExtUtils::MakeMaker version 6.50
+meta-spec:
+    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
+    version:  1.4
