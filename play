@@ -1,0 +1,74 @@
+#!/usr/local/bin/perl
+
+use 5.010;
+
+use strict;
+use warnings FATAL => 'all';
+#use diagnostics;
+
+use Data::Dump;
+#use Carp qw();
+
+$|=1;
+################################################################################
+use MooseX::Declare;
+
+class CPAN::Mini::FindDependencies {
+    use autodie;
+    use Archive::Tar;
+    use YAML::Tiny;
+    use Parse::CPAN::Packages::Fast;
+
+    has qw(cpan_mini           is ro isa Str required 1);
+    has qw(authors_path_prefix is ro isa Str);
+    has qw(packages_details    is ro isa Str);
+
+    sub BUILDARGS {
+        my ($class, %args) = @_;
+
+        my $cpan = $args{cpan_mini} || '';
+
+        $args{authors_path_prefix} ||=
+          join "/", $cpan, qw(authors id); # XXX
+        $args{packages_details} ||=
+          join "/", $cpan, qw(modules 02packages.details.txt.gz); # XXX
+
+        return \%args;
+    }
+
+    method extract_meta_yaml(Str $path_suffix) {
+        state $tar = Archive::Tar->new; # XXX make attribute
+
+        $tar->read(join "/", $self->authors_path_prefix, $path_suffix); # XXX
+
+        my ($meta) = grep { m{^[^/]*/META\.yml} } $tar->list_files;
+        die "META.yml not found in XXX"
+          unless $meta;
+
+        my $yaml = $tar->get_content( $meta );
+        $yaml = eval { YAML::Tiny::Load($yaml) };
+        die $@ if $@;
+
+        return $yaml; # XXX should return dependencies
+    }
+
+    method get_distpath_containing(Str $package_name) {
+        state $parser = Parse::CPAN::Packages::Fast->new($self->packages_details); # XXX make attribute
+
+        my $mod  = $parser->package($package_name);
+        my $dist = $mod->distribution;
+        my $path = $dist->pathname;
+
+        return $path;
+    }
+};
+################################################################################
+my $dep_finder = CPAN::Mini::FindDependencies->new(
+    cpan_mini => "/mirrors/cpan",
+);
+
+my $path_suffix = $dep_finder->get_distpath_containing("CPAN::FindDependencies");
+my $yaml        = $dep_finder->extract_meta_yaml($path_suffix);
+
+
+dd $yaml;
