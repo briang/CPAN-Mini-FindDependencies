@@ -17,15 +17,17 @@ use CPAN::Meta;
 use File::Find::Rule;
 use Time::HiRes qw(time);
 
-# Archives:             22,720
+# Archives:             22,722
 # Unknown suffix:           32
 # Corrupt archive:          28
 # With META.json:        1,321
-# With META.yml:        17,726
+# With META.yml:        17,729
 # With both:             1,266
-# Unparsable META.yml:     163
+# With neither:          4,878
+# Extract META Failure:      6
+# Unparsable META.yml:     156
 # Unparsable META.json:      0
-# OK:                   17,618
+# OK:                   17,622
 # Time:                    618.3 seconds
 
 my @all_cpan = grep {
@@ -34,8 +36,8 @@ my @all_cpan = grep {
 
 my $time = time;
 
-my ($bad_suffix, $bad_archive, $has_meta_json,
-    $has_meta_yml, $has_both, $bad_yaml, $bad_json, $good, $n) = (0) x 99;
+my ($bad_archive, $bad_extract, $bad_json, $bad_suffix, $bad_yaml,
+    $good, $has_both, $has_neither, $has_meta_json, $has_meta_yml, $n) = (0) x 99;
 
 for my $archive (@all_cpan) {
     #last if $n >= 300;
@@ -62,7 +64,13 @@ for my $archive (@all_cpan) {
     $has_both++
       if $meta_json && $meta_yml;
 
-    my $meta_any = $tar->get_content( $meta_yml // $meta_json );
+    $has_neither++, next
+      unless $meta_json || $meta_yml;
+
+    my $meta_any = $tar->get_content( $meta_yml || $meta_json );
+    $bad_extract++, next
+      unless $meta_any;
+
     my $meta;
     if ($meta_yml) {
         $meta = eval { CPAN::Meta->load_yaml_string($meta_any) };
@@ -87,6 +95,8 @@ Corrupt archive:      $bad_archive
 With META.json:       $has_meta_json
 With META.yml:        $has_meta_yml
 With both:            $has_both
+With neither:         $has_neither
+Extract META Failure: $bad_extract
 Unparsable META.yml:  $bad_yaml
 Unparsable META.json: $bad_json
 OK:                   $good
