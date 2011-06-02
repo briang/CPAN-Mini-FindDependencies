@@ -70,5 +70,37 @@ my $dep_finder = CPAN::Mini::FindDependencies->new(
 my $path_suffix = $dep_finder->get_distpath_containing("CPAN::FindDependencies");
 my $yaml        = $dep_finder->extract_meta_yaml($path_suffix);
 
-
 dd $yaml;
+dd $yaml->{requires};
+
+# SPEC 1.4 (YAML)
+
+# requires ALWAYS
+#     A YAML mapping indicating the Perl prerequisites this
+#     distribution requires for proper operation. The keys are the
+#     names of the prerequisites (module names or 'perl'), and the
+#     values are version specifications as described in VERSION
+#     SPECIFICATIONS.
+# recommends OPTION
+#     A YAML mapping indicating the Perl prerequisites this
+#     distribution recommends for enhanced operation. The keys are the
+#     names of the prerequisites (module names or 'perl'), and the
+#     values are version specifications as described in VERSION
+#     SPECIFICATIONS.
+# build_requires ALWAYS
+#     A YAML mapping indicating the Perl prerequisites required for
+#     building and/or testing of this distribution. The keys are the
+#     names of the prerequisites (module names or 'perl'), and the
+#     values are version specifications as described in VERSION
+#     SPECIFICATIONS. These dependencies are not required after the
+#     distribution is installed.
+# configure_requires ALWAYS
+#     A YAML mapping indicating the Perl prerequisites required before
+#     configuring this distribution. The keys are the names of the
+#     prerequisites (module names or 'perl'), and the values are
+#     version specifications as described in VERSION
+#     SPECIFICATIONS. These dependencies are not required after the
+#     distribution is installed.
+
+# SPEC 2.110930 (YAML or JSON)
+
