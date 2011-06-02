@@ -1,3 +1,16 @@
+#!/usr/local/bin/perl
+
+use 5.010;
+
+use strict;
+use warnings FATAL => 'all';
+#use diagnostics;
+
+use Data::Dump;
+#use Carp qw();
+
+$|=1;
+################################################################################
 use Archive::Tar;
 use CPAN::DistnameInfo;
 use File::Find::Rule;
