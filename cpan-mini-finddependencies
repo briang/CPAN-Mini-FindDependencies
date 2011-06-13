@@ -25,6 +25,15 @@ class CPAN::Mini::FindDependencies {
     has qw(include_suggests    is ro isa Bool default 0);
     has qw(include_recommends  is ro isa Bool default 1);
     has qw(prefer_yaml         is ro isa Bool default 0);
+    has qw(dependencies        is ro isa HashRef),
+      default => sub { {} },
+      traits  => ['Hash'],
+      handles => {
+          add_dependency => 'set',
+          get_children   => 'get',
+          get_parents    => 'keys',
+          seen_parent    => 'exists',
+      };
 
     sub BUILDARGS {
         my ($class, %args) = @_;
@@ -37,6 +46,20 @@ class CPAN::Mini::FindDependencies {
           join "/", $cpan, qw(modules 02packages.details.txt.gz); # XXX
 
         return \%args;
+    }
+
+    method add_dependants(Str @deps) {
+        while (@deps) {
+            my $parent = pop @deps;
+            next if $parent =~ /^(?:Config|DynaLoader)$/; # XXX Exists, but aren't indexed
+            next if $self->seen_parent($parent);
+            my $path_suffix = $self->get_distpath_containing($parent);
+            my $prereqs     = $self->get_prereqs($path_suffix);
+            my $children    = $self->flatten_prereqs($prereqs);
+
+            $self->add_dependency($parent, $children);
+            $self->add_dependants(@$children);
+        }
     }
 
     method flatten_prereqs(HashRef $prereqs) {
