@@ -37,6 +37,30 @@ class CPAN::Mini::FindDependencies {
         return \%args;
     }
 
+    method prefer_json() { ! $self->prefer_yaml }
+
+    method get_meta_name($tar) {
+        my ($json, $yaml);
+        for ($tar->list_files) {
+            $json = $_ if m{^[^/]*/META\.json$};
+            $yaml = $_ if m{^[^/]*/META\.yml$};
+            return $yaml if $yaml && $self->prefer_yaml;
+            return $json if $json && $self->prefer_json;
+        }
+
+        return $json || $yaml;
+    }
+
+    method get_content($tar, Str $filename) {
+        my $meta_file  = $tar->get_content($filename);
+        return unless $meta_file;
+
+        my $is_json = $meta_file =~ /\.json/i;
+        my $method  = join '_', 'load', ($is_json ? 'json' : 'yaml'), 'string';
+
+        return eval { CPAN::Meta->$method($meta_file) };
+    }
+
     method get_prereqs(Str $path_suffix) {
         state $tar = Archive::Tar->new; # XXX make attribute
 
@@ -44,26 +68,9 @@ class CPAN::Mini::FindDependencies {
         $tar->read(join "/", $self->authors_path_prefix, $path_suffix); # XXX
         # $bad_archive++, next unless $tar->error; # XXX what to do if error?
 
-        my ($meta_json) = grep { m{^[^/]*/META\.json} } $tar->list_files;
-        my ($meta_yml)  = grep { m{^[^/]*/META\.yml}  } $tar->list_files;
+        my $meta_file = $self->get_meta_name($tar);
+        my $meta      = $self->get_content($tar, $meta_file);
 
-        ( $self->prefer_yaml ? $meta_json : $meta_yml ) = ''
-          if $meta_yml && $meta_json;
-
-        my $meta;
-        if ($meta_yml) {
-            my $yaml = $tar->get_content($meta_yml);
-            $meta = eval { CPAN::Meta->load_yaml_string($yaml) };
-        }
-        elsif ($meta_json) {
-            my $json = $tar->get_content($meta_json);
-            $meta = eval { CPAN::Meta->load_json_string($json) };
-        }
-        else { # neither
-            return; # XXX
-        }
-
-#        return $meta->effective_prereqs;
         return $meta->effective_prereqs->as_string_hash;
     }
 
