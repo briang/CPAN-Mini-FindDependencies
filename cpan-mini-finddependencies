@@ -140,4 +140,27 @@ my $dep_finder = CPAN::Mini::FindDependencies->new(
 );
 
 $dep_finder->add_dependants(qw/Dist::Zilla/);
-dd $dep_finder->dependencies;
+my $tree = $dep_finder->dependencies;
+print_dep_tree_inst_order('Dist::Zilla');
+
+sub print_dep_tree {
+    my ($dist, $depth) = (@_, 0);
+    state %seen;
+
+    return if $seen{$dist}++;
+
+    say "  " x $depth, $dist;
+    print_dep_tree($_, $depth+1)
+      for @{$tree->{$dist}};
+}
+
+sub print_dep_tree_inst_order {
+    my ($dist, $depth) = (@_, 0);
+    state %seen;
+
+    return if $seen{$dist}++;
+
+    print_dep_tree_inst_order($_, $depth+1)
+      for @{$tree->{$dist}};
+    say "  " x $depth, $dist;
+}
