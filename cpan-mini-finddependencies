@@ -22,6 +22,8 @@ class CPAN::Mini::FindDependencies {
     has qw(cpan_mini           is ro isa Str required 1);
     has qw(authors_path_prefix is ro isa Str);
     has qw(packages_details    is ro isa Str);
+    has qw(include_suggests    is ro isa Bool default 0);
+    has qw(include_recommends  is ro isa Bool default 1);
     has qw(prefer_yaml         is ro isa Bool default 0);
 
     sub BUILDARGS {
