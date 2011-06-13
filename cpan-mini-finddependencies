@@ -17,15 +17,17 @@ class CPAN::Mini::FindDependencies {
     use autodie;
     use Archive::Peek;
     use CPAN::Meta;
+    use Module::CoreList ();
     use Parse::CPAN::Packages::Fast;
 
-    has qw(cpan_mini           is ro isa Str required 1);
-    has qw(authors_path_prefix is ro isa Str);
-    has qw(packages_details    is ro isa Str);
-    has qw(include_suggests    is ro isa Bool default 0);
-    has qw(include_recommends  is ro isa Bool default 1);
-    has qw(prefer_yaml         is ro isa Bool default 0);
-    has qw(dependencies        is ro isa HashRef),
+    has qw(cpan_mini            is ro isa Str required 1);
+    has qw(authors_path_prefix  is ro isa Str);
+    has qw(packages_details     is ro isa Str);
+    has qw(include_suggests     is ro isa Bool default 0);
+    has qw(include_recommends   is ro isa Bool default 1);
+    has qw(include_core_modules is ro isa Bool default 0); # XXX
+    has qw(prefer_yaml          is ro isa Bool default 0);
+    has qw(dependencies         is ro isa HashRef),
       default => sub { {} },
       traits  => ['Hash'],
       handles => {
@@ -57,8 +59,14 @@ class CPAN::Mini::FindDependencies {
             my $prereqs     = $self->get_prereqs($path_suffix);
             my $children    = $self->flatten_prereqs($prereqs);
 
+            my $incl_core = $self->include_core_modules;
             $self->add_dependency($parent, $children);
-            $self->add_dependants(@$children);
+            $self->add_dependants(
+                grep {
+                    !  $self->is_core($_)
+                    || $incl_core
+                } @$children
+            );
         }
     }
 
@@ -111,6 +119,8 @@ class CPAN::Mini::FindDependencies {
 
         return $meta->effective_prereqs->as_string_hash;
     }
+
+    method is_core(Str $m) { exists $Module::CoreList::version{$]}{$m} }
 
     method get_distpath_containing(Str $package_name) {
         state $parser = Parse::CPAN::Packages::Fast->new($self->packages_details); # XXX make attribute
