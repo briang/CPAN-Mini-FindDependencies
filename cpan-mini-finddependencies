@@ -62,6 +62,13 @@ class CPAN::Mini::FindDependencies {
         }
     }
 
+    method convert_meta(Str $filename, Str $contents) {
+        my $is_json = $filename =~ /\.json/i;
+        my $method  = join '_', 'load', ($is_json ? 'json' : 'yaml'), 'string';
+
+        return eval { CPAN::Meta->$method($contents) };
+    }
+
     method flatten_prereqs(HashRef $prereqs) {
         my %uniq_prereqs;
         for my $phase (keys %$prereqs) {
@@ -76,13 +83,6 @@ class CPAN::Mini::FindDependencies {
 
         delete $uniq_prereqs{perl};
         return [ sort { lc $a cmp lc $b } keys %uniq_prereqs ];
-    }
-
-    method convert_meta(Str $filename, Str $contents) {
-        my $is_json = $filename =~ /\.json/i;
-        my $method  = join '_', 'load', ($is_json ? 'json' : 'yaml'), 'string';
-
-        return eval { CPAN::Meta->$method($contents) };
     }
 
     method get_meta_name(ArrayRef[Str] $files) {
