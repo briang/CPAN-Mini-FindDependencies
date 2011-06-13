@@ -57,7 +57,7 @@ class CPAN::Mini::FindDependencies {
         my $meta = $tar->get_content($filename);
         return unless $meta;
 
-        my $is_json = $meta_file =~ /\.json/i;
+        my $is_json = $filename =~ /\.json/i;
         my $method  = join '_', 'load', ($is_json ? 'json' : 'yaml'), 'string';
 
         return eval { CPAN::Meta->$method($meta) };
@@ -91,7 +91,7 @@ my $dep_finder = CPAN::Mini::FindDependencies->new(
     cpan_mini => "/mirrors/cpan",
 );
 
-my $path_suffix = $dep_finder->get_distpath_containing("CPAN::FindDependencies");
+my $path_suffix = $dep_finder->get_distpath_containing("Module::Build");
 my $prereqs     = $dep_finder->get_prereqs($path_suffix);
 
 dd $prereqs;
