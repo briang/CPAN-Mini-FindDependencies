@@ -105,6 +105,7 @@ class CPAN::Mini::FindDependencies {
         my @files = $peek->files;
 
         my $meta_file     = $self->get_meta_name(\@files);
+        return {} unless $meta_file;
         my $meta_contents = $peek->file($meta_file);
         my $meta          = $self->convert_meta($meta_file, $meta_contents);
 
@@ -128,5 +129,5 @@ my $dep_finder = CPAN::Mini::FindDependencies->new(
     cpan_mini => "/mirrors/cpan",
 );
 
-$dep_finder->add_dependants(qw/Module::Build/);
+$dep_finder->add_dependants(qw/Dist::Zilla/);
 dd $dep_finder->dependencies;
