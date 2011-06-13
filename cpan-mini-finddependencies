@@ -22,7 +22,7 @@ class CPAN::Mini::FindDependencies {
     has qw(cpan_mini           is ro isa Str required 1);
     has qw(authors_path_prefix is ro isa Str);
     has qw(packages_details    is ro isa Str);
-    has qw(prefer_yaml         is ro isa Bool default 1);
+    has qw(prefer_yaml         is ro isa Bool default 0);
 
     sub BUILDARGS {
         my ($class, %args) = @_;
@@ -37,7 +37,7 @@ class CPAN::Mini::FindDependencies {
         return \%args;
     }
 
-    method extract_meta_yaml(Str $path_suffix) {
+    method get_prereqs(Str $path_suffix) {
         state $tar = Archive::Tar->new; # XXX make attribute
 
         $Archive::Tar::error = '';
@@ -47,21 +47,24 @@ class CPAN::Mini::FindDependencies {
         my ($meta_json) = grep { m{^[^/]*/META\.json} } $tar->list_files;
         my ($meta_yml)  = grep { m{^[^/]*/META\.yml}  } $tar->list_files;
 
-        # XXX Need to cope with 'prefer_yaml => 0'
-        my $meta_any = $tar->get_content( $meta_yml // $meta_json );
+        ( $self->prefer_yaml ? $meta_json : $meta_yml ) = ''
+          if $meta_yml && $meta_json;
+
         my $meta;
         if ($meta_yml) {
-            $meta = eval { CPAN::Meta->load_yaml_string($meta_any) };
-            # die $@ if $@; # XXX what to do if error
+            my $yaml = $tar->get_content($meta_yml);
+            $meta = eval { CPAN::Meta->load_yaml_string($yaml) };
         }
         elsif ($meta_json) {
-            $meta = eval { CPAN::Meta->load_json_string($meta_any) };
-            # die $@ if $@; # XXX what to do if error
+            my $json = $tar->get_content($meta_json);
+            $meta = eval { CPAN::Meta->load_json_string($json) };
         }
-        else { # XXX no META file found
+        else { # neither
+            return; # XXX
         }
 
-        return $meta; # XXX should return dependencies
+#        return $meta->effective_prereqs;
+        return $meta->effective_prereqs->as_string_hash;
     }
 
     method get_distpath_containing(Str $package_name) {
@@ -80,10 +83,9 @@ my $dep_finder = CPAN::Mini::FindDependencies->new(
 );
 
 my $path_suffix = $dep_finder->get_distpath_containing("CPAN::FindDependencies");
-my $yaml        = $dep_finder->extract_meta_yaml($path_suffix);
+my $prereqs     = $dep_finder->get_prereqs($path_suffix);
 
-dd $yaml;
-dd $yaml->{requires};
+dd $prereqs;
 
 # SPEC 1.4 (YAML)
 #
