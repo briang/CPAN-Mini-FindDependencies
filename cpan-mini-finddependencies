@@ -54,13 +54,13 @@ class CPAN::Mini::FindDependencies {
     }
 
     method get_content($tar, Str $filename) {
-        my $meta_file  = $tar->get_content($filename);
-        return unless $meta_file;
+        my $meta = $tar->get_content($filename);
+        return unless $meta;
 
         my $is_json = $meta_file =~ /\.json/i;
         my $method  = join '_', 'load', ($is_json ? 'json' : 'yaml'), 'string';
 
-        return eval { CPAN::Meta->$method($meta_file) };
+        return eval { CPAN::Meta->$method($meta) };
     }
 
     method get_prereqs(Str $path_suffix) {
